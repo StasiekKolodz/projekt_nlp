@@ -38,10 +38,9 @@ class VisionAgent:
         response = llm.invoke([message])
         return response.content
 
-    def describe_image_from_api(self, api_url=None):
-        if api_url is None:
-            api_url = self.api_url
-        resp = requests.get(api_url)
+    def describe_image_from_api(self):
+    
+        resp = requests.get(self.api_url)
         if resp.status_code != 200:
             return f"API error: {resp.text}"
         image_bytes = resp.content
