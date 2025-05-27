@@ -4,7 +4,8 @@ import base64
 import requests
 
 class VisionAgent:
-    def __init__(self):
+    def __init__(self, message_pool=None):
+        self.message_pool = message_pool
         self.llm = ChatOpenAI(
             model="gpt-4-turbo",
             max_tokens=500,

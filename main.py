@@ -1,6 +1,6 @@
 import threading
 from agents.message_pool import MessagePool
-from agents.mission_planner import plan_mission
+from agents.mission_planner import MissionPlannerAgent
 from agents.vision_agent import VisionAgent
 from agents.navigator import NavigatorAgent
 from agents.guardian import GuardianAgent
@@ -75,4 +75,8 @@ def run_mission(operator_prompt, image_path=None):
 
 if __name__ == "__main__":
     # Example usage:
-    run_mission("Leć do przodu i wyląduj.", image_path="person_img.jpeg")
+    # run_mission("Leć do przodu i wyląduj.", image_path="person_img.jpeg")
+    message_pool = MessagePool()
+    mp = MissionPlannerAgent(message_pool)
+    mp.run()
+
