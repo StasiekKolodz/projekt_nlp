@@ -2,6 +2,9 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_core.messages import HumanMessage
 import base64
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class VisionAgent:
     def __init__(self):

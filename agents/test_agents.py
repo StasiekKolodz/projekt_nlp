@@ -2,6 +2,9 @@ from agents.mission_planner import plan_mission
 from agents.vision_agent import describe_image
 from agents.navigator import NavigatorAgent
 from agents.guardian import GuardianAgent
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Test mission planning
 print("--- Mission Planner Test ---")

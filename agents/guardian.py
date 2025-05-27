@@ -1,5 +1,8 @@
 from langchain_community.chat_models import ChatOpenAI
 from langchain_core.messages import HumanMessage
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class GuardianAgent:
     def __init__(self):

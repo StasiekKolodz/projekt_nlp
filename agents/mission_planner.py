@@ -2,6 +2,10 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage
 import json
+from agents.reflection import ReflectionAgent
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def plan_mission(operator_command: str):
     llm = ChatOpenAI(
@@ -9,6 +13,10 @@ def plan_mission(operator_command: str):
         temperature=0.3,
         max_tokens=500,
     )
+    reflection_agent = ReflectionAgent()
+    improvements = reflection_agent.suggest_improvements(operator_command)
+    if improvements != "No similar missions found in the database.":
+        print(f"Suggested improvements based on past missions:\n{improvements}")
     prompt_text = f"""
 Jesteś agentem Mission-Planner dla drona. Twoim zadaniem jest przekształcenie polecenia operatora
 w listę jasnych, małych kroków opisujących działania drona. Nie opisuj, jak dron ma to zrobić – tylko co ma wykonać.

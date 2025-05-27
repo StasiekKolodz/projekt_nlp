@@ -3,6 +3,9 @@ from langchain_openai import ChatOpenAI
 from tools.drone_tools import takeoff, fly_to, land
 from langgraph.prebuilt import create_react_agent
 from langchain.schema import HumanMessage
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class NavigatorAgent:
     def __init__(self):
