@@ -17,13 +17,10 @@ class ReflectionAgent:
         )
         self.vector_store_path = vector_store_path
 
-        # Check if the vector store exists; if not, initialize it
         if not os.path.exists(vector_store_path) or not os.path.exists(f"{vector_store_path}/index.faiss"):
             os.makedirs(vector_store_path, exist_ok=True)
-            # Initialize with a placeholder text to avoid empty index issues
             self.vector_store = FAISS.from_texts(["Placeholder text for initialization"], OpenAIEmbeddings())
             self.vector_store.save_local(vector_store_path)
-            print(f"✅ Initialized new FAISS vector store at: {vector_store_path}")
         else:
             self.vector_store = FAISS.load_local(
                 vector_store_path, 
@@ -54,7 +51,6 @@ class ReflectionAgent:
         return response.content.strip()
 
     def save_to_vector_store(self, mission_success, message_pool_data):
-        # Remove placeholder if present, but do not re-initialize the whole store
         search_result = self.vector_store.search("Placeholder text for initialization", 1)
         if search_result and "Placeholder text for initialization" in getattr(search_result, 'texts', []):
             self.vector_store.delete(["Placeholder text for initialization"])
@@ -86,15 +82,12 @@ class ReflectionAgent:
                 print("Mission completed. Asking user for mission success...")
                 mission_success = self.ask_user_for_mission_success()
 
-                # Save the entire MessagePool to FAISS
                 self.save_to_vector_store(mission_success, messages)
 
-                # Clear the MessagePool to reset the system
                 with self.message_pool.lock:
                     self.message_pool.messages.clear()
 
                 print("System reset. Ready for a new mission.")
-                # Instead of break, restart the loop for multiple missions
                 continue
 
             time.sleep(2)
@@ -102,4 +95,4 @@ class ReflectionAgent:
     def start(self):
         reflection_thread = threading.Thread(target=self.read_messages, daemon=True)
         reflection_thread.start()
-        print("🪞 Reflection agent started and waiting for mission completion...")
+        print("Reflection agent started and waiting for mission completion...")

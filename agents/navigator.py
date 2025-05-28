@@ -39,14 +39,6 @@ class NavigatorAgent:
                     "Descend and land safely—no arguments required."
                 )
             )
-            # ,
-            # Tool(
-            #     name="None",
-            #     func=self.do_nothing,
-            #     description=(
-            #         "Do nothing. Use this if no action is needed at the moment."
-            #     )
-            # )
         ]
 
         self.navigator = create_react_agent(
@@ -56,8 +48,6 @@ class NavigatorAgent:
         self.current_step = None
         self.current_vision = None
 
-    # def do_nothing(self, arg=None):
-    #     return "No action taken. Please specify a valid command."
 
     def takeoff(self, altitude=2.0):
         if not str(altitude).isnumeric() or float(altitude) <= 0:
@@ -94,8 +84,7 @@ class NavigatorAgent:
                 return "Invalid parameters. Expected keys: 'north', 'east', 'down'."
         else:
             return "Invalid parameters. Expected a string, list, tuple, or dict with three values."
-        # if not all(str(x).isnumeric() for x in [north, east, down]):
-        #     return "Invalid coordinates. All values must be numbers."
+
         msg = self.message_pool.build_message(
             "drone_action",
             {"step": self.current_step,
@@ -137,7 +126,7 @@ class NavigatorAgent:
                             result = self.navigator.invoke({"messages": [HumanMessage(content=content)]}, 
                                                            {"recursion_limit": 60}
                                                            )
-                            # print(f"Result: {self.summarize_chat(result)}")
+                            print(f"Result: {self.summarize_chat(result)}")
                         modified_msg = msg.copy()
                         modified_msg["content"]["executed"] = True
 
@@ -159,74 +148,68 @@ class NavigatorAgent:
         navigator_thread.start()
         print("[NAVIGATOR] Navigator agent started and listening for tasks...")
 
-    # def summarize_chat(self, source: str | dict, width: int = 88) -> str:
-    #     """
-    #     Zwraca czytelny transcript pokazujący tylko:
-    #     • każdą wiadomość AI + jej wywołania narzędzi  
-    #     • każdą odpowiedź ToolMessage
-    #     `source` może być stringiem JSON-owym lub już sparsowanym dict/obj.
-    #     """
-    #     # --- 1. wczytanie JSON-a -------------------------------------------------
-    #     if isinstance(source, str):
-    #         data = json.loads(source)
-    #     else:
-    #         data = source                                    # już dict / obiekt
+    def summarize_chat(self, source: str | dict, width: int = 88) -> str:
+        """
+        Zwraca czytelny transcript pokazujący tylko:
+        • każdą wiadomość AI + jej wywołania narzędzi  
+        • każdą odpowiedź ToolMessage
+        `source` może być stringiem JSON-owym lub już sparsowanym dict/obj.
+        """
+        if isinstance(source, str):
+            data = json.loads(source)
+        else:
+            data = source
 
-    #     # --- 2. pomocnicze funkcje ----------------------------------------------
-    #     def _wrap(text: str) -> str:                         # miękkie łamanie
-    #         text = " ".join(text.split())
-    #         return "\n".join(wrap(text, width)) or "<empty>"
+        def _wrap(text: str) -> str:
+            text = " ".join(text.split())
+            return "\n".join(wrap(text, width)) or "<empty>"
 
-    #     def _as_dict(msg):
-    #         """
-    #         Zamienia wiadomość na słownik, niezależnie czy to
-    #         • dict
-    #         • Pydantic BaseModel (ma .model_dump() lub .dict())
-    #         • zwykły obiekt (ostatnia deska ratunku – __dict__)
-    #         """
-    #         if isinstance(msg, dict):
-    #             return msg
-    #         if hasattr(msg, "model_dump"):                   # Pydantic v2
-    #             return msg.model_dump()
-    #         if hasattr(msg, "dict"):                         # Pydantic v1
-    #             return msg.dict()
-    #         return msg.__dict__                              # fallback
+        def _as_dict(msg):
+            """
+            Zamienia wiadomość na słownik, niezależnie czy to
+            • dict
+            • Pydantic BaseModel (ma .model_dump() lub .dict())
+            • zwykły obiekt (ostatnia deska ratunku – __dict__)
+            """
+            if isinstance(msg, dict):
+                return msg
+            if hasattr(msg, "model_dump"):
+                return msg.model_dump()
+            if hasattr(msg, "dict"):
+                return msg.dict()
+            return msg.__dict__
 
-    #     # --- 3. właściwe przetwarzanie ------------------------------------------
-    #     lines: list[str] = []
+        lines: list[str] = []
 
-    #     for raw in data.get("messages", []):
-    #         msg = _as_dict(raw)                              # ← tu naprawa
+        for raw in data.get("messages", []):
+            msg = _as_dict(raw)
 
-    #         # ----------- AIMessage ----------
-    #         tool_calls = (
-    #             msg.get("tool_calls")
-    #             or msg.get("additional_kwargs", {}).get("tool_calls")
-    #         )
-    #         if tool_calls is not None:
-    #             lines.append(f"AI ⮕  {_wrap(msg.get('content', ''))}")
-    #             for call in tool_calls:
-    #                 # call może być dict lub obiekt Pydantic; ujednolicamy
-    #                 c = _as_dict(call)
-    #                 name = c.get("name") or c.get("function", {}).get("name")
-    #                 raw_args = (
-    #                     c.get("args")
-    #                     or c.get("function", {}).get("arguments", "")
-    #                     or ""
-    #                 )
-    #                 try:                                     # ładne drukowanie args
-    #                     parsed = (
-    #                         json.loads(raw_args)
-    #                         if isinstance(raw_args, str) else raw_args
-    #                     )
-    #                     arg_str = json.dumps(parsed, ensure_ascii=False)
-    #                 except Exception:
-    #                     arg_str = str(raw_args)
-    #                 lines.append(indent(f"└─ call {name}({arg_str})", "   "))
+            tool_calls = (
+                msg.get("tool_calls")
+                or msg.get("additional_kwargs", {}).get("tool_calls")
+            )
+            if tool_calls is not None:
+                lines.append(f"AI ⮕  {_wrap(msg.get('content', ''))}")
+                for call in tool_calls:
+                    c = _as_dict(call)
+                    name = c.get("name") or c.get("function", {}).get("name")
+                    raw_args = (
+                        c.get("args")
+                        or c.get("function", {}).get("arguments", "")
+                        or ""
+                    )
+                    try:
+                        parsed = (
+                            json.loads(raw_args)
+                            if isinstance(raw_args, str) else raw_args
+                        )
+                        arg_str = json.dumps(parsed, ensure_ascii=False)
+                    except Exception:
+                        arg_str = str(raw_args)
+                    lines.append(indent(f"└─ call {name}({arg_str})", "   "))
 
-    #         # ----------- ToolMessage ---------
-    #         elif msg.get("tool_call_id") or msg.get("name"):
-    #             tool_name = msg.get("name", "<tool>")
-    #             lines.append(f"{tool_name} ⇠  {_wrap(msg.get('content', ''))}")
+            elif msg.get("tool_call_id") or msg.get("name"):
+                tool_name = msg.get("name", "<tool>")
+                lines.append(f"{tool_name} ⇠  {_wrap(msg.get('content', ''))}")
 
-    #     return "\n".join(lines)
+        return "\n".join(lines)
