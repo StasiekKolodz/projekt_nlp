@@ -127,7 +127,7 @@ class MissionPlannerAgent:
 
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
-                    self.message_pool.remove_type("plan_mission")
+                    self.message_pool.remove_message(msg)
                     print(f"📜 Mission Plan: {mission_plan}")
         
                 if msg["msg_type"] == "print_user":
