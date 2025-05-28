@@ -76,9 +76,9 @@ class VisionAgent:
                 if msg["msg_type"] == "mission_steps":
                     if msg["content"].get("vision_context") is None:
                         # vision_context = self.describe_image_from_api()
-                        # print("👁️ Processing plan_mission message without vision context...")
-                        vision_context = self.describe_image("/home/stas/studia/nlp/projekt_nlp/person_img.jpeg")
-                        print(f"👁️ Vision context generated: {vision_context}")
+                        # print("Processing plan_mission message without vision context...")
+                        vision_context = self.describe_image("person_img.jpeg")
+                        print(f"\n[VISION] Vision context generated:\n {vision_context}")
 
                         new_content = msg["content"]
 
@@ -95,4 +95,4 @@ class VisionAgent:
     def start(self):
         vision_thread = threading.Thread(target=self.read_messages, daemon=True)
         vision_thread.start()
-        print("👁️ Vision agent started and listening for plan_mission messages...")
+        print("[VISION] Vision agent started and listening for plan_mission messages...")

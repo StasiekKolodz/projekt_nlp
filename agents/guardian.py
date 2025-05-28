@@ -7,7 +7,7 @@ class GuardianAgent:
     def __init__(self, message_pool=None):
         self.message_pool = message_pool
         self.llm = ChatOpenAI(
-            model="gpt-4",
+            model="gpt-4o-mini",
             temperature=0.2,
             max_tokens=300,
         )
@@ -37,12 +37,15 @@ class GuardianAgent:
     def execute_action(self, action, parameters=None):
         if action == "takeoff":
             drone_tools.takeoff(parameters)
+            print(f"[GUARDIAN] Drone action '{action}' executed with parameters: {parameters}")
         elif action == "fly_to":
             drone_tools.fly_to(parameters)
+            print(f"[GUARDIAN] Drone action '{action}' executed with parameters: {parameters}")
         elif action == "land":
             drone_tools.land()
+            print(f"[GUARDIAN] Drone action '{action}' executed with parameters: {parameters}")
         else:
-            print(f"❗️ Unknown action: {action}. No execution performed.")
+            print(f"[GUARDIAN] Unknown action: {action}. No execution performed.")
 
     def read_messages(self):
         while True:
@@ -55,7 +58,7 @@ class GuardianAgent:
                     vision_context = msg["content"].get("vision_context")
                     validation = self.validate(step, action, vision_context, parameters)
                     if validation != "OK":
-                        print(f"❌ Guardian validation failed for step '{step}': {validation}")
+                        print(f"[GUARDIAN] Guardian validation failed for step '{step}': {validation}")
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
                             {"step": step,
@@ -63,7 +66,7 @@ class GuardianAgent:
                             "logged": False}
                         )
                     else:
-                        print(f"✅ Guardian validation passed for step '{step}'")
+                        print(f"[GUARDIAN] Guardian validation passed for step '{step}'")
                         self.execute_action(action, parameters)
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
@@ -78,9 +81,9 @@ class GuardianAgent:
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_message(msg)
-            time.sleep(2)
+            # time.sleep(2)
 
     def start(self):
         guardian_thread = threading.Thread(target=self.read_messages, daemon=True)
         guardian_thread.start()
-        print("🛡️ Guardian agent started and listening for planned actions...")
+        print("[GUARDIAN] Guardian agent started and listening for planned actions...")

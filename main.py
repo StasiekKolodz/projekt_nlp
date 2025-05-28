@@ -5,9 +5,12 @@ from agents.vision_agent import VisionAgent
 from agents.navigator import NavigatorAgent
 from agents.guardian import GuardianAgent
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 if __name__ == "__main__":
-    # Example usage:
     # run_mission("Leć do przodu i wyląduj.", image_path="person_img.jpeg")
     message_pool = MessagePool()
     

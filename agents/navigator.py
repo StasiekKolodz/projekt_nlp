@@ -35,15 +35,27 @@ class NavigatorAgent:
                 description=(
                     "Descend and land safely—no arguments required."
                 )
-            ),
+            )
+            # ,
+            # Tool(
+            #     name="None",
+            #     func=self.do_nothing,
+            #     description=(
+            #         "Do nothing. Use this if no action is needed at the moment."
+            #     )
+            # )
         ]
 
         self.navigator = create_react_agent(
-            ChatOpenAI(model="gpt-4"),
+            ChatOpenAI(model="gpt-4o-mini"),
             self.tools,
         )
         self.current_step = None
         self.current_vision = None
+
+    # def do_nothing(self, arg=None):
+    #     return "No action taken. Please specify a valid command."
+
     def takeoff(self, altitude=2.0):
         if not str(altitude).isnumeric() or float(altitude) <= 0:
             return "Invalid altitude. Must be a positive number."
@@ -60,6 +72,7 @@ class NavigatorAgent:
             "logged": False}
         )
         self.message_pool.post(msg)
+        # print(f"[NAVIGATOR] Posting takeoff message: {msg}")
 
         return f"Drone taking off to {altitude} meters."
 
@@ -76,6 +89,7 @@ class NavigatorAgent:
             "executed": False,
             "logged": False}
         )
+        # print(f"[NAVIGATOR] Posting fly_to message: {msg}")
         self.message_pool.post(msg)
         return f"Drone flying to (N:{north}, E:{east}, D:{down})."
 
@@ -89,12 +103,12 @@ class NavigatorAgent:
             "logged": False}
         )
         self.message_pool.post(msg)
+        # print(f"[NAVIGATOR] Posting land message: {msg}")
         return "Drone landing."
 
     def read_messages(self):
         while True:
             messages = self.message_pool.get_all()
-            # print(f"🗨️ Received {len(messages)} messages from the pool.")
             for msg in messages:
                 if msg["msg_type"] == "mission_steps" and not msg["content"].get("executed"):
                     if msg["content"].get("vision_context") is not None:
@@ -102,19 +116,20 @@ class NavigatorAgent:
                         self.current_vision = vision_context
                         for step in msg["content"]["mission_plan"]:
                             self.current_step = step
-                            print(f"🚀 Executing step: {step}")
+                            print(f"[NAVIGATOR] Executing step: {step}")
                             content = f"Krok misji: {step} \nKontekst wizji: {vision_context}"
-                            result = self.navigator.invoke({"messages": [HumanMessage(content=content)]})
-                            # print(f"Result: {result}")
+                            result = self.navigator.invoke({"messages": [HumanMessage(content=content)]}, 
+                                                        #    {"recursion_limit": 100}
+                                                           )
+                            print(f"Result: {result}")
                             modified_msg = msg
                             modified_msg["executed"] = True
 
                             self.message_pool.post(modified_msg)
                             self.message_pool.remove_message(msg)
-            time.sleep(2)
+            # time.sleep(2)
 
     def run_task(self, task):
-        # Accepts either dict or string, always wraps as a message
         if isinstance(task, dict):
             step = task.get("step", "")
             vision = task.get("vision_context", "")
@@ -126,4 +141,4 @@ class NavigatorAgent:
     def start(self):
         navigator_thread = threading.Thread(target=self.read_messages, daemon=True)
         navigator_thread.start()
-        print("🧭 Navigator agent started and listening for tasks...")
+        print("[NAVIGATOR] Navigator agent started and listening for tasks...")

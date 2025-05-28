@@ -8,12 +8,14 @@ import json
 import threading
 import time
 from langchain.chains import RetrievalQA
+import os
+import sys
 
 class MissionPlannerAgent:
     def __init__(self, message_pool, retriever=None):
         self.message_pool = message_pool
         self.retriever = retriever
-        self.llm = ChatOpenAI(model="gpt-4", max_tokens=500)
+        self.llm = ChatOpenAI(model="gpt-4o-mini", max_tokens=500)
         self.memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
         # Example tool: you can add more tools as needed
@@ -67,7 +69,7 @@ class MissionPlannerAgent:
             }
         )
         self.message_pool.post(msg)
-        return "Planowanie misji zostało zlecone. Proszę czekać na wynik."
+        return "\n[MISSION PLANNER] Planowanie misji zostało zlecone. Proszę czekać na wynik."
 
     def plan_mission(self, operator_command: str):
 
@@ -96,7 +98,6 @@ class MissionPlannerAgent:
         message = HumanMessage(content=prompt_text)
         response = llm.invoke([message])
         try:
-            # Try to extract JSON from the response
             plan = json.loads(response.content)
         except Exception:
             plan = response.content
@@ -128,22 +129,37 @@ class MissionPlannerAgent:
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_message(msg)
-                    print(f"📜 Mission Plan: {mission_plan}")
+                    print(f"\n[MISSION PLANNER] Mission Plan: {mission_plan}")
         
                 if msg["msg_type"] == "print_user":
                     print(f"Message: {msg['content']}")
-            time.sleep(2)
+            # time.sleep(2)
         
     def run(self):
-
         poller = threading.Thread(target=self.read_messages, daemon=True)
         poller.start()
 
+        messages = []  # Store messages to display above the input prompt
+
         while True:
-            user_input = input("Enter your command: ")
+            os.system('clear')  # Clear the terminal
+            print("=== Mission Planner ===")
+            print("\n".join(messages))  # Display all messages above the input prompt
+            print("\n[MISSION PLANNER] Enter your command: ", end="", flush=True)
+
+            sys.stdout.flush()  # Ensure everything is printed before input
+            user_input = input()  # Get user input
+
             if user_input.lower() == "exit":
                 print("Exiting mission planner.")
                 if hasattr(self, '_timer'):
                     self._timer.cancel()
                 break
-            print(self.chat(user_input))
+
+            # Process the input and add the response to the messages list
+            response = self.chat(user_input)
+            messages.append(response)
+
+            # Limit the number of messages displayed to avoid clutter
+            if len(messages) > 20:
+                messages.pop(0)
