@@ -45,7 +45,7 @@ class GuardianAgent:
         while True:
             messages = self.message_pool.get_all()
             for msg in messages:
-                if msg["msg_type"] == "drone_action":
+                if msg["msg_type"] == "drone_action" and not msg["content"].get("executed"):
                     step = msg["content"].get("step")
                     action = msg["content"].get("action")
                     parameters = msg["content"].get("parameters", None)
@@ -55,16 +55,24 @@ class GuardianAgent:
                         print(f"❌ Guardian validation failed for step '{step}': {validation}")
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
-                            {"step": step, "validation": validation}
+                            {"step": step,
+                            "validation": validation,
+                            "logged": False}
                         )
                     else:
                         print(f"✅ Guardian validation passed for step '{step}'")
                         self.execute_action(action, parameters)
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
-                            {"step": step, "validation": "OK"}
+                            {"step": step,
+                            "validation": "OK",
+                            "logged": False}
                         )
                  
+                    modified_msg = msg
+                    modified_msg["executed"] = True
+
+                    self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_message(msg)
             time.sleep(2)
