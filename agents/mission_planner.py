@@ -113,7 +113,7 @@ class MissionPlannerAgent:
     def read_messages(self):
         while True:
             messages = self.message_pool.get_all()
-            print(f"messages: {messages}")
+            # print(f"messages: {messages}")
             for msg in messages:
                 if msg["msg_type"] == "plan_mission" and not msg["content"].get("executed"):
                     mission_plan = self.plan_mission(msg["content"])
@@ -126,7 +126,7 @@ class MissionPlannerAgent:
                         )
 
                     modified_msg = msg.copy()
-                    modified_msg["executed"] = True
+                    modified_msg["content"]["executed"] = True
 
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)

@@ -78,7 +78,7 @@ class GuardianAgent:
                         )
                  
                     modified_msg = msg.copy()
-                    modified_msg["executed"] = True
+                    modified_msg["content"]["executed"] = True
 
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)

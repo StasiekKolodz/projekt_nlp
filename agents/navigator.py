@@ -26,10 +26,10 @@ class NavigatorAgent:
                 func=self.fly_to,
                 description=(
                     "Move the drone relative to its current position.\n"
-                    "Arguments (all floats, in meters):\n"
-                    "  • north: positive moves north, negative moves south\n"
-                    "  • east:  positive moves east,  negative moves west\n"
-                    "  • down:  positive moves downward, negative moves upward"
+                    "Argument (list of floats, in meters):\n"
+                    "  • north (float): positive moves north, negative moves south\n"
+                    "  • east (float):  positive moves east,  negative moves west\n"
+                    "  • down (float):  positive moves downward, negative moves upward"
                 )
             ),
             Tool(
@@ -50,7 +50,7 @@ class NavigatorAgent:
         ]
 
         self.navigator = create_react_agent(
-            ChatOpenAI(model="gpt-4o-mini"),
+            ChatOpenAI(model="gpt-4"),
             self.tools,
         )
         self.current_step = None
@@ -76,13 +76,18 @@ class NavigatorAgent:
         )
         self.message_pool.post(msg)
         # print(f"[NAVIGATOR] Posting takeoff message: {msg}")
-
         return f"Drone taking off to {altitude} meters."
 
-    def fly_to(self, north=0.0, east=0.0, down=0.0):
-        if not all(str(x).isnumeric() for x in [north, east, down]):
-            return "Invalid coordinates. All values must be numbers."
-
+    def fly_to(self, parameters):
+        if isinstance(parameters, str):
+            parts = parameters.replace(",", " ").split()
+            if len(parts) != 3:
+                return "Invalid parameters. Expected format: 'north east down'."
+            north, east, down = parts
+        elif isinstance(parameters, (list, tuple)) and len(parameters) == 3:
+            north, east, down = parameters
+        # if not all(str(x).isnumeric() for x in [north, east, down]):
+        #     return "Invalid coordinates. All values must be numbers."
         msg = self.message_pool.build_message(
             "drone_action",
             {"step": self.current_step,
@@ -122,14 +127,14 @@ class NavigatorAgent:
                             print(f"[NAVIGATOR] Executing step: {step}")
                             content = f"Krok misji: {step} \nKontekst wizji: {vision_context}"
                             result = self.navigator.invoke({"messages": [HumanMessage(content=content)]}, 
-                                                           {"recursion_limit": 300}
+                                                           {"recursion_limit": 60}
                                                            )
                             print(f"Result: {self.summarize_chat(result)}")
-                            modified_msg = msg.copy()
-                            modified_msg["executed"] = True
+                        modified_msg = msg.copy()
+                        modified_msg["content"]["executed"] = True
 
-                            self.message_pool.post(modified_msg)
-                            self.message_pool.remove_message(msg)
+                        self.message_pool.post(modified_msg)
+                        self.message_pool.remove_message(msg)
             time.sleep(1)
 
     def run_task(self, task):
