@@ -59,7 +59,11 @@ class MissionPlannerAgent:
     def request_mission(self, arg=None):
         msg = self.message_pool.build_message(
             "plan_mission",
-            self.current_input
+            {
+                "user_input": self.current_input,
+                "executed": False,
+                "logged": False
+            }
         )
         self.message_pool.post(msg)
         return "Planowanie misji zostało zlecone. Proszę czekać na wynik."
@@ -97,17 +101,30 @@ class MissionPlannerAgent:
             plan = response.content
         return plan
 
+    def clean_messages(self):
+        messages = self.message_pool.get_all()
+        for msg in messages:
+            if msg["content"].get("executed", False) and msg["content"].get("logged", False):
+                self.message_pool.remove(msg)
+
     def read_messages(self):
         while True:
             messages = self.message_pool.get_all()
             for msg in messages:
-                if msg["msg_type"] == "plan_mission":
+                if msg["msg_type"] == "plan_mission" and not msg["content"].get("executed"):
                     mission_plan = self.plan_mission(msg["content"])
                     result_msg = self.message_pool.build_message(
                             "mission_steps",
                             {"mission_plan": mission_plan,
-                            "vision_context": None}
+                            "vision_context": None,
+                            "executed": False,
+                            "logged": False}
                         )
+
+                    modified_msg = msg
+                    modified_msg["executed"] = True
+
+                    self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_type("plan_mission")
                     print(f"📜 Mission Plan: {mission_plan}")
@@ -118,9 +135,6 @@ class MissionPlannerAgent:
         
     def run(self):
 
-        # self._timer = threading.Timer(1.0, self.read_messages)
-        # self._timer.daemon = True
-        # self._timer.start()
         poller = threading.Thread(target=self.read_messages, daemon=True)
         poller.start()
 
