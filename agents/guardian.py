@@ -12,12 +12,15 @@ class GuardianAgent:
             max_tokens=300,
         )
 
-    def validate(self, mission_step, planned_action, parameters=None):
+    def validate(self, mission_step, planned_action, vision_context=None, parameters=None):
         prompt = f"""
             Jesteś agentem Guardian. Twoim zadaniem jest sprawdzić, czy planowana akcja nawigatora jest logiczna i poprawna względem kroku misji.
 
             Krok misji:
             {mission_step}
+
+            Kontekst wizyjny (opis widoku z kamery):
+            {vision_context}
 
             Planowana akcja:
             {planned_action}
@@ -49,8 +52,8 @@ class GuardianAgent:
                     step = msg["content"].get("step")
                     action = msg["content"].get("action")
                     parameters = msg["content"].get("parameters", None)
-
-                    validation = self.validate(step, action, parameters)
+                    vision_context = msg["content"].get("vision_context")
+                    validation = self.validate(step, action, vision_context, parameters)
                     if validation != "OK":
                         print(f"❌ Guardian validation failed for step '{step}': {validation}")
                         result_msg = self.message_pool.build_message(
