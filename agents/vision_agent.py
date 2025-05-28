@@ -2,6 +2,8 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_core.messages import HumanMessage
 import base64
 import requests
+import time
+import threading
 
 class VisionAgent:
     def __init__(self, message_pool=None):
@@ -66,3 +68,31 @@ class VisionAgent:
         )
         response = self.llm.invoke([message])
         return response.content
+
+    def read_messages(self):
+        while True:
+            messages = self.message_pool.get_all()
+            for msg in messages:
+                if msg["msg_type"] == "mission_steps":
+                    if msg["content"].get("vision_context") is None:
+                        # vision_context = self.describe_image_from_api()
+                        # print("👁️ Processing plan_mission message without vision context...")
+                        vision_context = self.describe_image("/home/stas/studia/nlp/projekt_nlp/person_img.jpeg")
+                        print(f"👁️ Vision context generated: {vision_context}")
+
+                        new_content = msg["content"]
+
+                        self.message_pool.remove_message(msg)
+
+                        new_content["vision_context"] = vision_context
+                        result_msg = self.message_pool.build_message(
+                            msg["msg_type"],
+                            new_content
+                        )
+                        self.message_pool.post(result_msg)
+            time.sleep(2)
+
+    def start(self):
+        vision_thread = threading.Thread(target=self.read_messages, daemon=True)
+        vision_thread.start()
+        print("👁️ Vision agent started and listening for plan_mission messages...")

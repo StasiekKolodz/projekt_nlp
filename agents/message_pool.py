@@ -24,6 +24,10 @@ class MessagePool:
         with self.lock:
             self.messages = [msg for msg in self.messages if msg["msg_type"] != msg_type]
 
+    def remove_message(self, message):
+        with self.lock:
+            self.messages = [msg for msg in self.messages if msg != message]
+
     def __len__(self):
         with self.lock:
             return len(self.messages)

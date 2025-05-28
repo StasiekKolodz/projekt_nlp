@@ -86,11 +86,12 @@ class MissionPlannerAgent:
             for msg in messages:
                 if msg["msg_type"] == "plan_mission":
                     mission_plan = self.plan_mission(msg["content"])
-                    msg = self.message_pool.build_message(
+                    result_msg = self.message_pool.build_message(
                             "mission_steps",
-                            mission_plan
+                            {"mission_plan": mission_plan,
+                            "vision_context": None}
                         )
-                    self.message_pool.post(msg)
+                    self.message_pool.post(result_msg)
                     self.message_pool.remove_type("plan_mission")
                     print(f"📜 Mission Plan: {mission_plan}")
         
