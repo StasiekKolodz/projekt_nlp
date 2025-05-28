@@ -64,16 +64,19 @@ class MissionPlannerAgent:
         msg = self.message_pool.build_message(
             "plan_mission",
             {
-                "user_input": self.current_input,
-                "executed": False,
-                "logged": False
+            "user_input": self.current_input,
+            "chat_history": self.memory.load_memory_variables({}).get("chat_history", []),
+            "executed": False,
+            "logged": False
             }
         )
         self.message_pool.post(msg)
         return "\n[MISSION PLANNER] Planowanie misji zostało zlecone. Proszę czekać na wynik."
 
-    def plan_mission(self, operator_command: str):
-
+    def plan_mission(self, msg):
+        operator_command = msg.get("user_input", "")
+        chat_history = msg.get("chat_history", [])
+        
         llm = ChatOpenAI(
             model="gpt-4",
             temperature=0.3,
@@ -85,6 +88,9 @@ class MissionPlannerAgent:
 
             Polecenie operatora:
             "{operator_command}"
+
+            Historia chatu z operatorem:
+            {chat_history}
 
             Zwróć wynik w postaci listy JSON. Każdy krok powinien zawierać numer i cel misji.
 

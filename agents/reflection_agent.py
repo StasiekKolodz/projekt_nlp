@@ -54,8 +54,10 @@ class ReflectionAgent:
         return response.content.strip()
 
     def save_to_vector_store(self, mission_success, message_pool_data):
-        if "Placeholder text for initialization" in self.vector_store.search("Placeholder text for initialization", 1).texts:
-            self.vector_store = FAISS.from_texts([], OpenAIEmbeddings())
+        # Remove placeholder if present, but do not re-initialize the whole store
+        search_result = self.vector_store.search("Placeholder text for initialization", 1)
+        if search_result and "Placeholder text for initialization" in getattr(search_result, 'texts', []):
+            self.vector_store.delete(["Placeholder text for initialization"])
         document = f"""
         Mission Success: {mission_success}
         MessagePool Data: {message_pool_data}
@@ -92,7 +94,8 @@ class ReflectionAgent:
                     self.message_pool.messages.clear()
 
                 print("System reset. Ready for a new mission.")
-                break  # Exit the loop to allow the system to reset
+                # Instead of break, restart the loop for multiple missions
+                continue
 
             time.sleep(2)
 
