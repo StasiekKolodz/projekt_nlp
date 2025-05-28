@@ -52,7 +52,11 @@ class NavigatorAgent:
 
         msg = self.message_pool.build_message(
             "drone_action",
-            {"step": self.current_step, "action": "takeoff", "parameters": altitude}
+            {"step": self.current_step, 
+            "action": "takeoff",
+            "parameters": altitude,
+            "executed": False,
+            "logged": False}
         )
         self.message_pool.post(msg)
 
@@ -64,7 +68,11 @@ class NavigatorAgent:
 
         msg = self.message_pool.build_message(
             "drone_action",
-            {"step": self.current_step, "action": "fly_to", "parameters": [float(north), float(east), float(down)]}
+            {"step": self.current_step,
+            "action": "fly_to",
+            "parameters": [float(north), float(east), float(down)],
+            "executed": False,
+            "logged": False}
         )
         self.message_pool.post(msg)
         return f"Drone flying to (N:{north}, E:{east}, D:{down})."
@@ -72,7 +80,10 @@ class NavigatorAgent:
     def land(self, arg=None):
         msg = self.message_pool.build_message(
             "drone_action",
-            {"step": self.current_step, "action": "land"}
+            {"step": self.current_step,
+            "action": "land",
+            "executed": False,
+            "logged": False}
         )
         self.message_pool.post(msg)
         return "Drone landing."
@@ -82,7 +93,7 @@ class NavigatorAgent:
             messages = self.message_pool.get_all()
             # print(f"🗨️ Received {len(messages)} messages from the pool.")
             for msg in messages:
-                if msg["msg_type"] == "mission_steps":
+                if msg["msg_type"] == "mission_steps" and not msg["content"].get("executed"):
                     if msg["content"].get("vision_context") is not None:
                         vision_context = msg["content"]["vision_context"]
                         for step in msg["content"]["mission_plan"]:
