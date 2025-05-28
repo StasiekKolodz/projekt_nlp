@@ -43,7 +43,7 @@ class NavigatorAgent:
             self.tools,
         )
         self.current_step = None
-
+        self.current_vision = None
     def takeoff(self, altitude=2.0):
         if not str(altitude).isnumeric() or float(altitude) <= 0:
             return "Invalid altitude. Must be a positive number."
@@ -52,7 +52,8 @@ class NavigatorAgent:
 
         msg = self.message_pool.build_message(
             "drone_action",
-            {"step": self.current_step, 
+            {"step": self.current_step,
+            "vision_context": self.current_vision,
             "action": "takeoff",
             "parameters": altitude,
             "executed": False,
@@ -69,6 +70,7 @@ class NavigatorAgent:
         msg = self.message_pool.build_message(
             "drone_action",
             {"step": self.current_step,
+            "vision_context": self.current_vision,
             "action": "fly_to",
             "parameters": [float(north), float(east), float(down)],
             "executed": False,
@@ -81,6 +83,7 @@ class NavigatorAgent:
         msg = self.message_pool.build_message(
             "drone_action",
             {"step": self.current_step,
+             "vision_context": self.current_vision,
             "action": "land",
             "executed": False,
             "logged": False}
@@ -96,13 +99,18 @@ class NavigatorAgent:
                 if msg["msg_type"] == "mission_steps" and not msg["content"].get("executed"):
                     if msg["content"].get("vision_context") is not None:
                         vision_context = msg["content"]["vision_context"]
+                        self.current_vision = vision_context
                         for step in msg["content"]["mission_plan"]:
                             self.current_step = step
                             print(f"🚀 Executing step: {step}")
                             content = f"Krok misji: {step} \nKontekst wizji: {vision_context}"
                             result = self.navigator.invoke({"messages": [HumanMessage(content=content)]})
                             # print(f"Result: {result}")
-                            self.message_pool.remove_type("mission_steps")
+                            modified_msg = msg
+                            modified_msg["executed"] = True
+
+                            self.message_pool.post(modified_msg)
+                            self.message_pool.remove_message(msg)
             time.sleep(2)
 
     def run_task(self, task):
