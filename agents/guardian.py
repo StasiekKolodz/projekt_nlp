@@ -28,7 +28,7 @@ class GuardianAgent:
             Parametry akcji (jeśli są):
             {parameters if parameters else 'Brak parametrów'}
 
-            Odpowiedz tylko 'OK' jeśli akcja jest logiczna i poprawna. Jeśli nie, napisz krótko dlaczego odrzucasz akcję.
+            Odpowiedz tylko 'OK' jeśli akcja jest logiczna i poprawna w danym kontekście wizyjnym. Jeśli nie, napisz krótko dlaczego odrzucasz akcję.
             """
         message = HumanMessage(content=prompt)
         response = self.llm.invoke([message])
