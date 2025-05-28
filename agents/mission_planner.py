@@ -8,10 +8,12 @@ import json
 import threading
 import time
 from langgraph.checkpoint.memory import MemorySaver
+from langchain.chains import RetrievalQA
 
 class MissionPlannerAgent:
-    def __init__(self, message_pool):
+    def __init__(self, message_pool, retriever=None):
         self.message_pool = message_pool
+        self.retriever = retriever
         self.llm = ChatOpenAI(model="gpt-4", max_tokens=500)
         self.memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
         # memory = MemorySaver()
@@ -22,7 +24,13 @@ class MissionPlannerAgent:
                 name="PlanMission",
                 func=self.request_mission,
                 description="Plan drone mission steps from operator command."
-            )
+            ),
+            Tool(
+                name="VectorStoreSearch",
+                func=self.vector_search_tool,
+                description="Use this to search the vector store for information about previous missions."
+            ),
+
         ]
         self.agent = initialize_agent(
             tools=self.tools,
@@ -33,6 +41,15 @@ class MissionPlannerAgent:
             verbose=True
         )
         self.current_input = None
+
+    # https://hub.athina.ai/blogs/agentic-rag-using-langchain-and-gemini-2-0/
+    def vector_search(self, query: str):
+        qa_chain = RetrievalQA.from_chain_type(llm=self.llm, retriever=self.retriever)
+        return qa_chain.run(query)
+
+    def vector_search_tool(self, query: str) -> str:
+        """Tool for searching the vector store."""
+        return self.vector_search(query)
 
     def chat(self, user_input: str):
         self.current_input = user_input
