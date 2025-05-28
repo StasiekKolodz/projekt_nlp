@@ -11,7 +11,8 @@ def takeoff(altitude=2.0):
     except Exception as e:
         return f"Takeoff error: {e}"
 
-def fly_to(north: float, east: float, down: float):
+def fly_to(parameters):
+    north, east, down = parameters
     try:
         resp = requests.post(f"{API_URL}/goto_relative", json={"north": north, "east": east, "down": down}, timeout=5)
         if resp.ok:

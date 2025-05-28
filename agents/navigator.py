@@ -86,6 +86,14 @@ class NavigatorAgent:
             north, east, down = parts
         elif isinstance(parameters, (list, tuple)) and len(parameters) == 3:
             north, east, down = parameters
+        elif isinstance(parameters, dict):
+            north = parameters.get("north")
+            east = parameters.get("east")
+            down = parameters.get("down")
+            if north is None or east is None or down is None:
+                return "Invalid parameters. Expected keys: 'north', 'east', 'down'."
+        else:
+            return "Invalid parameters. Expected a string, list, tuple, or dict with three values."
         # if not all(str(x).isnumeric() for x in [north, east, down]):
         #     return "Invalid coordinates. All values must be numbers."
         msg = self.message_pool.build_message(
