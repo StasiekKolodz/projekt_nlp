@@ -3,6 +3,8 @@ from langchain_core.messages import HumanMessage
 import threading
 import time
 from tools import drone_tools
+import copy
+
 class GuardianAgent:
     def __init__(self, message_pool=None):
         self.message_pool = message_pool
@@ -75,13 +77,13 @@ class GuardianAgent:
                             "logged": False}
                         )
                  
-                    modified_msg = msg
+                    modified_msg = msg.copy()
                     modified_msg["executed"] = True
 
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_message(msg)
-            # time.sleep(2)
+            time.sleep(1)
 
     def start(self):
         guardian_thread = threading.Thread(target=self.read_messages, daemon=True)

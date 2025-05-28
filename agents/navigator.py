@@ -4,6 +4,9 @@ from langgraph.prebuilt import create_react_agent
 from langchain.schema import HumanMessage
 import threading
 import time
+import json
+from textwrap import indent, wrap
+import copy
 
 class NavigatorAgent:
     def __init__(self, message_pool=None):
@@ -119,15 +122,15 @@ class NavigatorAgent:
                             print(f"[NAVIGATOR] Executing step: {step}")
                             content = f"Krok misji: {step} \nKontekst wizji: {vision_context}"
                             result = self.navigator.invoke({"messages": [HumanMessage(content=content)]}, 
-                                                        #    {"recursion_limit": 100}
+                                                           {"recursion_limit": 300}
                                                            )
-                            print(f"Result: {result}")
-                            modified_msg = msg
+                            print(f"Result: {self.summarize_chat(result)}")
+                            modified_msg = msg.copy()
                             modified_msg["executed"] = True
 
                             self.message_pool.post(modified_msg)
                             self.message_pool.remove_message(msg)
-            # time.sleep(2)
+            time.sleep(1)
 
     def run_task(self, task):
         if isinstance(task, dict):
@@ -142,3 +145,75 @@ class NavigatorAgent:
         navigator_thread = threading.Thread(target=self.read_messages, daemon=True)
         navigator_thread.start()
         print("[NAVIGATOR] Navigator agent started and listening for tasks...")
+
+    def summarize_chat(self, source: str | dict, width: int = 88) -> str:
+        """
+        Zwraca czytelny transcript pokazujący tylko:
+        • każdą wiadomość AI + jej wywołania narzędzi  
+        • każdą odpowiedź ToolMessage
+        `source` może być stringiem JSON-owym lub już sparsowanym dict/obj.
+        """
+        # --- 1. wczytanie JSON-a -------------------------------------------------
+        if isinstance(source, str):
+            data = json.loads(source)
+        else:
+            data = source                                    # już dict / obiekt
+
+        # --- 2. pomocnicze funkcje ----------------------------------------------
+        def _wrap(text: str) -> str:                         # miękkie łamanie
+            text = " ".join(text.split())
+            return "\n".join(wrap(text, width)) or "<empty>"
+
+        def _as_dict(msg):
+            """
+            Zamienia wiadomość na słownik, niezależnie czy to
+            • dict
+            • Pydantic BaseModel (ma .model_dump() lub .dict())
+            • zwykły obiekt (ostatnia deska ratunku – __dict__)
+            """
+            if isinstance(msg, dict):
+                return msg
+            if hasattr(msg, "model_dump"):                   # Pydantic v2
+                return msg.model_dump()
+            if hasattr(msg, "dict"):                         # Pydantic v1
+                return msg.dict()
+            return msg.__dict__                              # fallback
+
+        # --- 3. właściwe przetwarzanie ------------------------------------------
+        lines: list[str] = []
+
+        for raw in data.get("messages", []):
+            msg = _as_dict(raw)                              # ← tu naprawa
+
+            # ----------- AIMessage ----------
+            tool_calls = (
+                msg.get("tool_calls")
+                or msg.get("additional_kwargs", {}).get("tool_calls")
+            )
+            if tool_calls is not None:
+                lines.append(f"AI ⮕  {_wrap(msg.get('content', ''))}")
+                for call in tool_calls:
+                    # call może być dict lub obiekt Pydantic; ujednolicamy
+                    c = _as_dict(call)
+                    name = c.get("name") or c.get("function", {}).get("name")
+                    raw_args = (
+                        c.get("args")
+                        or c.get("function", {}).get("arguments", "")
+                        or ""
+                    )
+                    try:                                     # ładne drukowanie args
+                        parsed = (
+                            json.loads(raw_args)
+                            if isinstance(raw_args, str) else raw_args
+                        )
+                        arg_str = json.dumps(parsed, ensure_ascii=False)
+                    except Exception:
+                        arg_str = str(raw_args)
+                    lines.append(indent(f"└─ call {name}({arg_str})", "   "))
+
+            # ----------- ToolMessage ---------
+            elif msg.get("tool_call_id") or msg.get("name"):
+                tool_name = msg.get("name", "<tool>")
+                lines.append(f"{tool_name} ⇠  {_wrap(msg.get('content', ''))}")
+
+        return "\n".join(lines)

@@ -10,6 +10,7 @@ import time
 from langchain.chains import RetrievalQA
 import os
 import sys
+import copy
 
 class MissionPlannerAgent:
     def __init__(self, message_pool, retriever=None):
@@ -112,6 +113,7 @@ class MissionPlannerAgent:
     def read_messages(self):
         while True:
             messages = self.message_pool.get_all()
+            print(f"messages: {messages}")
             for msg in messages:
                 if msg["msg_type"] == "plan_mission" and not msg["content"].get("executed"):
                     mission_plan = self.plan_mission(msg["content"])
@@ -123,7 +125,7 @@ class MissionPlannerAgent:
                             "logged": False}
                         )
 
-                    modified_msg = msg
+                    modified_msg = msg.copy()
                     modified_msg["executed"] = True
 
                     self.message_pool.post(modified_msg)
@@ -133,7 +135,7 @@ class MissionPlannerAgent:
         
                 if msg["msg_type"] == "print_user":
                     print(f"Message: {msg['content']}")
-            # time.sleep(2)
+            time.sleep(1)
         
     def run(self):
         poller = threading.Thread(target=self.read_messages, daemon=True)

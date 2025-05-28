@@ -90,7 +90,7 @@ class VisionAgent:
                             new_content
                         )
                         self.message_pool.post(result_msg)
-            time.sleep(2)
+            time.sleep(1)
 
     def start(self):
         vision_thread = threading.Thread(target=self.read_messages, daemon=True)
