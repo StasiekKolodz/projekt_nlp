@@ -137,7 +137,9 @@ class MissionPlannerAgent:
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_message(msg)
-                    print(f"\n[MISSION PLANNER] Mission Plan: {mission_plan}")
+                    print("\n[MISSION PLANNER] Mission plan:")
+                    for plan in mission_plan:
+                        print(f"{plan['id']} - {plan['cel']}")
         
                 if msg["msg_type"] == "print_user":
                     print(f"Message: {msg['content']}")

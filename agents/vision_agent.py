@@ -78,7 +78,7 @@ class VisionAgent:
                         # vision_context = self.describe_image_from_api()
                         # print("Processing plan_mission message without vision context...")
                         vision_context = self.describe_image("person_img.jpeg")
-                        print(f"\n[VISION] Vision context generated:\n {vision_context}")
+                        print(f"\n[VISION] Vision context generated:\n {vision_context}\n")
 
                         new_content = msg["content"]
 
