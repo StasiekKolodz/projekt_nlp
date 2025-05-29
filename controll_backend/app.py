@@ -307,7 +307,7 @@ def ros_spin_thread():
     drone = DroneController()
     camera_node = CameraNode()
     executor = MultiThreadedExecutor()
-    executor.add_node(drone)
+    # executor.add_node(drone)
     executor.add_node(camera_node)
     executor.spin()
     drone.destroy_node()

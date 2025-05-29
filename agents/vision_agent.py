@@ -75,9 +75,9 @@ class VisionAgent:
             for msg in messages:
                 if msg["msg_type"] == "mission_steps":
                     if msg["content"].get("vision_context") is None:
-                        # vision_context = self.describe_image_from_api()
+                        vision_context = self.describe_image_from_api()
                         # print("Processing plan_mission message without vision context...")
-                        vision_context = self.describe_image("person_img.jpeg")
+                        # vision_context = self.describe_image("person_img.jpeg")
                         print(f"\n[VISION] Vision context generated:\n {vision_context}")
 
                         new_content = msg["content"]

@@ -1,6 +1,3 @@
-a = {"value": 1, "value2": 2}
-print(a)
-b = a
-b["value"] = 3
-print(a)
-print(b)
+from tools.drone_tools import fly_to, takeoff, land
+
+flyto([1, 2, 3])

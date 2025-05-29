@@ -48,7 +48,7 @@ class GuardianAgent:
             print(f"[GUARDIAN] Drone action '{action}' executed with parameters: {parameters}")
         else:
             print(f"[GUARDIAN] Unknown action: {action}. No execution performed.")
-
+        time.sleep(2)
     def read_messages(self):
         while True:
             messages = self.message_pool.get_all()

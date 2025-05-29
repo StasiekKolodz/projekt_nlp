@@ -76,7 +76,7 @@ class MissionPlannerAgent:
     def plan_mission(self, msg):
         operator_command = msg.get("user_input", "")
         chat_history = msg.get("chat_history", [])
-        
+
         llm = ChatOpenAI(
             model="gpt-4",
             temperature=0.3,
@@ -92,13 +92,14 @@ class MissionPlannerAgent:
             Historia chatu z operatorem:
             {chat_history}
 
+            Kot
             Zwróć wynik w postaci listy JSON. Każdy krok powinien zawierać numer i cel misji.
 
             Przykład formatu:
             [
             {{ "id": 1, "cel": "Wystartuj" }},
             {{ "id": 2, "cel": "Leć 10m na zachód" }},
-            {{ "id": 3, "cel": "Zrób zdjęcie" }},
+            {{ "id": 3, "cel": "Jeśli widzisz dom to wyląduj" }},
             ...
             ]
             """
