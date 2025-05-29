@@ -21,16 +21,23 @@ class MissionPlannerAgent:
 
         self.tools = [
             Tool(
-                name="PlanMission",
-                func=self.request_mission,
-                description="Plan drone mission steps from operator command."
+            name="PlanMission",
+            func=self.request_mission,
+            description=(
+                "Use this tool to convert the operator's command into a step-by-step mission plan for the drone. "
+                "It will break down the user's instruction into clear, numbered actions for the drone to execute. "
+                "Call this when the user asks to plan or create a mission, provides commands for the drone, "
+                "or types commands such as 'land' or 'takeoff'."
+            ),
             ),
             Tool(
-                name="VectorStoreSearch",
-                func=self.vector_search_tool,
-                description="Use this to search the vector store for information about previous missions."
+            name="VectorStoreSearch",
+            func=self.vector_search_tool,
+            description=(
+                "Search the vector store for relevant information about previous missions or related knowledge. "
+                "Use this tool to retrieve context or details that may help in planning or answering questions."
+            )
             ),
-
         ]
         self.agent = initialize_agent(
             tools=self.tools,
@@ -38,10 +45,11 @@ class MissionPlannerAgent:
             agent="conversational-react-description",
             # checkpointer=memory,
             memory=self.memory,
-            verbose=True
+            verbose=False
         )
         self.current_input = None
-
+        self.validation_ok = 0
+        self.validation_fail = 0
     # https://hub.athina.ai/blogs/agentic-rag-using-langchain-and-gemini-2-0/
     def vector_search(self, query: str):
         if self.retriever:
@@ -70,20 +78,26 @@ class MissionPlannerAgent:
             }
         )
         self.message_pool.post(msg)
-        return "\n[MISSION PLANNER] Planowanie misji zostało zlecone. Proszę czekać na wynik."
+        return "\n[MISSION PLANNER] Planowanie misji zostało zlecone. Zaraz misja ostanie wykonana. Przebieg misji wyświetli się na ekranie."
 
     def plan_mission(self, msg):
         operator_command = msg.get("user_input", "")
         chat_history = msg.get("chat_history", [])
-
         llm = ChatOpenAI(
             model="gpt-4",
             temperature=0.3,
             max_tokens=500,
         )
         prompt_text = f"""
-            Jesteś agentem Mission-Planner dla drona. Twoim zadaniem jest przekształcenie polecenia operatora
-            w listę jasnych, małych kroków opisujących działania drona. Nie opisuj, jak dron ma to zrobić – tylko co ma wykonać.
+            Jesteś agentem Mission-Planner dla drona. Twoim zadaniem jest przekształcenie polecenia operatora drona
+            w listę jasnych, małych kroków opisujących działania drona. Nie opisuj, jak dron ma to zrobić – tylko co ma wykonać. 
+            Jeśli misja wymaga tylko jednego kroku, zwróć listę z jednym krokiem.
+            Jeśli misja wymaga wielu kroków, zwróć listę z wieloma krokami, gdzie każdy krok ma swój numer i cel.
+            Kroki misji powinny być niezależne od siebie i nie powinny zawierać przejść ani pętli.
+            Jeśli krok wymaga warunków, to warunek powinien byc w jednym kroku razem z wymaganą akcją.
+            Akcje powinny być ograniczone do startowania, lądowania, lotu w określonym kierunku i wysokości. Mogą mieć one warunki i parametry, ale nie powinny zawierać skomplikowanych instrukcji.
+            
+            Oto szczegóły:
 
             Polecenie operatora:
             "{operator_command}"
@@ -98,7 +112,8 @@ class MissionPlannerAgent:
             [
             {{ "id": 1, "cel": "Wystartuj" }},
             {{ "id": 2, "cel": "Leć 10m na zachód" }},
-            {{ "id": 3, "cel": "Jeśli widzisz dom to wyląduj" }},
+            {{ "id": 3, "cel": "Jeśli widzisz dom to obniż lot o 1m" }},
+            {{ "id": 4, "cel": "Wyląduj" }},
             ...
             ]
             """
@@ -140,7 +155,26 @@ class MissionPlannerAgent:
                     print("\n[MISSION PLANNER] Mission plan:")
                     for plan in mission_plan:
                         print(f"{plan['id']} - {plan['cel']}")
-        
+                
+                if msg["msg_type"] == "guardian_validation":
+                    # Add guardian validation info to chat history
+                    validation_info = msg["content"]
+                    step = validation_info.get("step")
+                    action = validation_info.get("action")
+                    parameters = validation_info.get("parameters")
+                    validation = validation_info.get("validation")
+                    if validation == "OK":
+                        chat_entry = f"EXECUTED MISSION STEP: Step: {step['cel']} | Action: {action} | Parameters: {parameters} | Validation: {validation}"
+                        self.validation_ok += 1
+                    else:
+                        chat_entry = f"REJECTED (failed) MISSION STEP: Step: {step['cel']} | Action: {action} | Parameters: {parameters} | Validation: {validation}"
+                        self.validation_fail += 1
+                    
+                    # Add to memory
+                    self.memory.save_context({"input": chat_entry}, {"output": ""})
+                    # print(chat_entry)
+                    self.message_pool.remove_message(msg)
+
                 if msg["msg_type"] == "print_user":
                     print(f"Message: {msg['content']}")
             time.sleep(1)
@@ -158,12 +192,16 @@ class MissionPlannerAgent:
             print("\n[MISSION PLANNER] Enter your command: ", end="", flush=True)
 
             sys.stdout.flush() 
+
             user_input = input()
 
             if user_input.lower() == "exit":
                 print("Exiting mission planner.")
                 if hasattr(self, '_timer'):
                     self._timer.cancel()
+                print("TOTALGUARDIAN VALIDATIONS:", self.validation_ok + self.validation_fail)
+                print("VALIDATIONS OK:", self.validation_ok)
+                print("VALIDATIONS FAILED:", self.validation_fail)
                 break
 
             response = self.chat(user_input)

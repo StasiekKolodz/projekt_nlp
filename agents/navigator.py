@@ -36,7 +36,7 @@ class NavigatorAgent:
                 name="Land",
                 func=self.land,
                 description=(
-                    "Descend and land safely—no arguments required."
+                    "Command the drone to descend and land safely at its current location. No arguments required."
                 )
             )
         ]
@@ -124,9 +124,9 @@ class NavigatorAgent:
                             print(f"[NAVIGATOR] Executing step: {step['cel']}")
                             content = f"Krok misji: {step} \nKontekst wizji: {vision_context}"
                             result = self.navigator.invoke({"messages": [HumanMessage(content=content)]}, 
-                                                           {"recursion_limit": 60}
+                                                           {"recursion_limit": 25}
                                                            )
-                            print(f"Result: {self.summarize_chat(result)}")
+                            # print(f"Result: {self.summarize_chat(result)}")
                         modified_msg = msg.copy()
                         modified_msg["content"]["executed"] = True
 
@@ -149,12 +149,7 @@ class NavigatorAgent:
         print("[NAVIGATOR] Navigator agent started and listening for tasks...")
 
     def summarize_chat(self, source: str | dict, width: int = 88) -> str:
-        """
-        Zwraca czytelny transcript pokazujący tylko:
-        • każdą wiadomość AI + jej wywołania narzędzi  
-        • każdą odpowiedź ToolMessage
-        `source` może być stringiem JSON-owym lub już sparsowanym dict/obj.
-        """
+
         if isinstance(source, str):
             data = json.loads(source)
         else:
@@ -165,12 +160,6 @@ class NavigatorAgent:
             return "\n".join(wrap(text, width)) or "<empty>"
 
         def _as_dict(msg):
-            """
-            Zamienia wiadomość na słownik, niezależnie czy to
-            • dict
-            • Pydantic BaseModel (ma .model_dump() lub .dict())
-            • zwykły obiekt (ostatnia deska ratunku – __dict__)
-            """
             if isinstance(msg, dict):
                 return msg
             if hasattr(msg, "model_dump"):

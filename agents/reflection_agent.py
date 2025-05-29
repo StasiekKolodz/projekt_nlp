@@ -28,6 +28,8 @@ class ReflectionAgent:
                 allow_dangerous_deserialization=True
             )
 
+
+
     def reflection(self, mission_step, planned_action, vision_context=None, parameters=None):
         prompt = f"""
             Jesteś agentem Reflection. Twoim zadaniem jest przygotować dane do zapisania w bazie wektorowej na potrzeby następnych misji dronem dostaniesz informacje o powodzeniu misji oraz dane z message pool z całej misji.

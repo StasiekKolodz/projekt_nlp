@@ -17,6 +17,7 @@ class GuardianAgent:
     def validate(self, mission_step, planned_action, vision_context=None, parameters=None):
         prompt = f"""
             Jesteś agentem Guardian. Twoim zadaniem jest sprawdzić, czy planowana akcja nawigatora jest logiczna i poprawna względem kroku misji.
+            Sprawdź, czy planowana akcja jest zgodna z kontekstem wizyjnym i czy nie narusza zasad bezpieczeństwa.
 
             Krok misji:
             {mission_step}
@@ -64,6 +65,8 @@ class GuardianAgent:
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
                             {"step": step,
+                            "action": action,
+                            "parameters": parameters,
                             "validation": validation,
                             "logged": False}
                         )
@@ -73,6 +76,8 @@ class GuardianAgent:
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
                             {"step": step,
+                            "action": action,
+                            "parameters": parameters,
                             "validation": "OK",
                             "logged": False}
                         )

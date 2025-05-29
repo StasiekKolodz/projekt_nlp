@@ -42,32 +42,35 @@ class VisionAgent:
         return response.content
 
     def describe_image_from_api(self):
-    
-        resp = requests.get(self.api_url)
-        if resp.status_code != 200:
-            return f"API error: {resp.text}"
-        image_bytes = resp.content
-        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-        image_data_url = f"data:image/jpeg;base64,{image_base64}"
-        prompt = (
-            "Jesteś agentem wizji komputerowej, którego zadaniem jest pomoc agentowi nawigacyjnemu drona. "
-            "Otrzymujesz obraz z kamery zamontowanej na dronie.\n"
-            "Twoim zadaniem jest wygenerować bardzo zwięzły opis przestrzenny tego, co znajduje się na obrazie — tylko informacje kluczowe dla nawigacji drona.\n"
-            "Nie opisuj rodzaju ani koloru obiektów. Skup się tylko na ich:\n"
-            "- Położeniu względem kamery (np. 'na wprost', 'po lewej', 'w prawym dolnym rogu'),\n"
-            "- Szacunkowej odległości od kamery (np. 'blisko', 'daleko', 'średni dystans'),\n"
-            "- Rozmiarze w kadrze (np. 'duży', 'mały', 'zajmuje większość kadru').\n"
-            "Odpowiedź powinna mieć maksymalnie 3 zdania i może opcjonalnie przyjąć format listy.\n"
-            "Analizuj obraz:"
-        )
-        message = HumanMessage(
-            content=[
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": image_data_url}},
-            ]
-        )
-        response = self.llm.invoke([message])
-        return response.content
+        try:
+            resp = requests.get(self.api_url)
+            if resp.status_code != 200:
+                return f"API error: {resp.text}"
+            image_bytes = resp.content
+            image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+            image_data_url = f"data:image/jpeg;base64,{image_base64}"
+            prompt = (
+                "Jesteś agentem wizji komputerowej, którego zadaniem jest pomoc agentowi nawigacyjnemu drona. "
+                "Otrzymujesz obraz z kamery zamontowanej na dronie.\n"
+                "Twoim zadaniem jest wygenerować bardzo zwięzły opis przestrzenny tego, co znajduje się na obrazie — tylko informacje kluczowe dla nawigacji drona.\n"
+                "Nie opisuj rodzaju ani koloru obiektów. Skup się tylko na ich:\n"
+                "- Położeniu względem kamery (np. 'na wprost', 'po lewej', 'w prawym dolnym rogu'),\n"
+                "- Szacunkowej odległości od kamery (np. 'blisko', 'daleko', 'średni dystans'),\n"
+                "- Rozmiarze w kadrze (np. 'duży', 'mały', 'zajmuje większość kadru').\n"
+                "Odpowiedź powinna mieć maksymalnie 3 zdania i może opcjonalnie przyjąć format listy.\n"
+                "Analizuj obraz:"
+            )
+            message = HumanMessage(
+                content=[
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": image_data_url}},
+                ]
+            )
+            response = self.llm.invoke([message])
+            return response.content
+        except Exception as e:
+            print(f"Error while fetching image from API: {str(e)}")
+            return ""
 
     def read_messages(self):
         while True:
