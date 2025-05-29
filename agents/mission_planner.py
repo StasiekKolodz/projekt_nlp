@@ -19,7 +19,6 @@ class MissionPlannerAgent:
         self.llm = ChatOpenAI(model="gpt-4o-mini", max_tokens=500)
         self.memory = ConversationBufferMemory(return_messages=True, memory_key="chat_history")
 
-        # Example tool: you can add more tools as needed
         self.tools = [
             Tool(
                 name="PlanMission",
@@ -138,7 +137,9 @@ class MissionPlannerAgent:
                     self.message_pool.post(modified_msg)
                     self.message_pool.post(result_msg)
                     self.message_pool.remove_message(msg)
-                    print(f"\n[MISSION PLANNER] Mission Plan: {mission_plan}")
+                    print("\n[MISSION PLANNER] Mission plan:")
+                    for plan in mission_plan:
+                        print(f"{plan['id']} - {plan['cel']}")
         
                 if msg["msg_type"] == "print_user":
                     print(f"Message: {msg['content']}")
@@ -148,16 +149,16 @@ class MissionPlannerAgent:
         poller = threading.Thread(target=self.read_messages, daemon=True)
         poller.start()
 
-        messages = []  # Store messages to display above the input prompt
+        messages = []
 
         while True:
-            os.system('clear')  # Clear the terminal
+            os.system('clear')
             print("=== Mission Planner ===")
-            print("\n".join(messages))  # Display all messages above the input prompt
+            print("\n".join(messages))
             print("\n[MISSION PLANNER] Enter your command: ", end="", flush=True)
 
-            sys.stdout.flush()  # Ensure everything is printed before input
-            user_input = input()  # Get user input
+            sys.stdout.flush() 
+            user_input = input()
 
             if user_input.lower() == "exit":
                 print("Exiting mission planner.")
@@ -165,10 +166,8 @@ class MissionPlannerAgent:
                     self._timer.cancel()
                 break
 
-            # Process the input and add the response to the messages list
             response = self.chat(user_input)
             messages.append(response)
 
-            # Limit the number of messages displayed to avoid clutter
             if len(messages) > 20:
                 messages.pop(0)

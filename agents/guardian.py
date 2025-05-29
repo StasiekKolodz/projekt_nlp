@@ -60,7 +60,7 @@ class GuardianAgent:
                     vision_context = msg["content"].get("vision_context")
                     validation = self.validate(step, action, vision_context, parameters)
                     if validation != "OK":
-                        print(f"[GUARDIAN] Guardian validation failed for step '{step}': {validation}")
+                        print(f"[GUARDIAN] Guardian validation failed for step '{step['cel']}': {validation}")
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
                             {"step": step,
@@ -68,7 +68,7 @@ class GuardianAgent:
                             "logged": False}
                         )
                     else:
-                        print(f"[GUARDIAN] Guardian validation passed for step '{step}'")
+                        print(f"[GUARDIAN] Guardian validation passed for step '{step['cel']}'")
                         self.execute_action(action, parameters)
                         result_msg = self.message_pool.build_message(
                             "guardian_validation",
